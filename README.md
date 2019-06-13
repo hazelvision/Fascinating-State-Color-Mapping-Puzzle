@@ -8,27 +8,27 @@ Here's the problem statement from the actual assignment:
 Using these four colors (red, purple, blue and green), color every state with a number on it. No state may touch another state of the same color. 
 
 STATE VALUES (Before color multiplier):
-Washington - 71
-Oregon - 98
-California - 163
-Idaho - 83
-Nevada - 110
-Montana - 147
-Wyoming - 97
-Utah - 84
-Arizona - 113
-Colorado - 104
-New Mexico - 121
-North Dakota - 70
-South Dakota - 77
-Nebraska - 77
-Kansas - 82
-Oklahoma - 69
-Texas - 268
-Minnesota - 86
-Iowa - 56
-Missouri - 69
-Arkansas - 53
+Washington - 71;
+Oregon - 98;
+California - 163;
+Idaho - 83;
+Nevada - 110;
+Montana - 147;
+Wyoming - 97;
+Utah - 84;
+Arizona - 113;
+Colorado - 104;
+New Mexico - 121;
+North Dakota - 70;
+South Dakota - 77;
+Nebraska - 77;
+Kansas - 82;
+Oklahoma - 69;
+Texas - 268;
+Minnesota - 86;
+Iowa - 56;
+Missouri - 69;
+Arkansas - 53;
 Louisiana - 51
 
 Each color is a multiplier. If you color a state green, you will take the number value in that state and multiply it by 4. This will be the score for that state. All states you color purple will be multiplied by 2.
