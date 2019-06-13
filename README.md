@@ -31,13 +31,13 @@ Missouri - 69;
 Arkansas - 53;
 Louisiana - 51
 
-Each color is a multiplier. If you color a state green, you will take the number value in that state and multiply it by 4. This will be the score for that state. All states you color purple will be multiplied by 2.
-
 SCORING:
-Red states x1
-Purple states x2
-Blue states x3
-Green states x4
+Red states x1;
+Purple states x2;
+Blue states x3;
+Green states x4;
+
+Each color is a multiplier. If you color a state green, you will take the number value in that state and multiply it by 4. This will be the score for that state. All states you color purple will be multiplied by 2.
 
 Add up all your state scores for your total number of points. Your goal is to get the lowest score possible (golf score). For a different challenge, color the states to get the maximum score possible.
 
