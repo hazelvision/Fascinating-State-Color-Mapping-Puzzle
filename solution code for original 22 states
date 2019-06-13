@@ -7,7 +7,8 @@ Type
     color_set_type = set of color_list_type;
     color_multiplier_type = array[color_list_type] of integer;
     
-    (*create type to store list of states *)
+    (* create type to store list of states *)
+    (* I tried different list orders to see whether it matters for solving the problem more quickly. *)
 
     (* state list most adjacent to least adjacent - somewhat contiguous - OPTIMAL *)
     state_list_type = (California, Nevada, Arizona, Montana, Idaho, Oregon, Utah, Wyoming, Colorado, NewMexico, Texas, Oklahoma, Nebraska, SouthDakota, Kansas, Missouri, Iowa, Washington, NorthDakota, Minnesota, Arkansas, Louisiana);
@@ -406,7 +407,7 @@ procedure assign_state_color(curr_state:state_list_type; state_color_combo: stat
 *)                        (* at this point, we know the current combo has a chance to be the best, so keep going with the procedure by removing the assigned color from adjacent states, and recursively exploring assigned all available colors to the next state *)
     
 (*                            begin
-*)                                (* remove the assigned color from states adjacent to the current state *)
+*)                              (* remove the assigned color from states adjacent to the current state *)
                                 remove_color_from_adjacent_states(curr_state, color, valid_state_colors);
                 
                                 (* set valid color for the current state to the assigned color. this step is completely unnecessary but makes the display easier to read when debugging *)
@@ -442,48 +443,36 @@ begin
     initialize_state_values(state_value);
     initialize_color_multipliers(color_multiplier);
 
-    (*  the loop below runs the algorithm incrementally for one state, then two, etc. which helps monitor whether it is progressing as expected. 
-        
-        ultimately we only care about the 22 state solution, but seeing how it increments can help debug *) 
-
-    (* uncomment the line below and enter a State to run the algorithm for fewer states *)
     beg_state:=beg_state_const;
-    end_state:=end_state_const;
+    end_state:=high(state_list_type);
 
-    for end_state:=beg_state to high(state_list_type) do
-        begin
-            (* initialize all dynamic data structures *)
-            initialize_valid_state_colors(valid_state_colors);
-            initialize_state_color_combo(state_color_combo);
+    (* initialize all dynamic data structures *)
+    initialize_valid_state_colors(valid_state_colors);
+    initialize_state_color_combo(state_color_combo);
         
-            (* initialize optimal solution *)
-            initialize_state_color_combo(best_state_color_combo);
-            initialize_best_score(best_score);
+    (* initialize optimal solution *)
+    initialize_state_color_combo(best_state_color_combo);
+    initialize_best_score(best_score);
 
-            (* reset all counters *) 
-            total_combos_checked:=0;
-            total_deadend:=0;
-            total_abandoned:=0;
-            valid_combo_count:=0;
+    (* reset all counters *) 
+    total_combos_checked:=0;
+    total_deadend:=0;
+    total_abandoned:=0;
+    valid_combo_count:=0;
 
-            (* initiate recursive procedure call *)
-            assign_state_color(state_list, state_color_combo, valid_state_colors);
+    (* initiate recursive procedure call *)
+    assign_state_color(state_list, state_color_combo, valid_state_colors);
 
-            (* write results to display *)
-            writeln('End State: ', end_state);
-            writeln(minmax_option,' score: ', best_score);
-            writeln('Total combos checked: ', total_combos_checked);
-            writeln('Total deadends: ', total_deadend);
-            writeln('Total abandoned valid combos: ', total_abandoned);
-            writeln('Total complete valid combos: ', valid_combo_count);
-            writeln;
+    (* write results to display *)
+    writeln('End State: ', end_state);
+    writeln(minmax_option,' score: ', best_score);
+    writeln('Total combos checked: ', total_combos_checked);
+    writeln('Total deadends: ', total_deadend);
+    writeln('Total abandoned valid combos: ', total_abandoned);
+    writeln('Total complete valid combos: ', valid_combo_count);
+    writeln;
             
-            (* uncomment the line below and enter a State to run the algorithm for fewer states *)
-             if end_state=end_state_const then break;  
-            
-        end; (* end For loop *)
-
-        (* display optimal solution *)
-        display_state_color_combo(best_state_color_combo);
+    (* display optimal solution *)
+    display_state_color_combo(best_state_color_combo);
 
 end.
