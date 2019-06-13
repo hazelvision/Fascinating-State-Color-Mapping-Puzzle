@@ -1,0 +1,489 @@
+Program StateColorAssignment(output);
+
+
+Type
+    (* create types to store list of colors and corresponding multiplier)*)
+    color_list_type = (Red, Purple, Blue, Green);
+    color_set_type = set of color_list_type;
+    color_multiplier_type = array[color_list_type] of integer;
+    
+    (*create type to store list of states *)
+
+    (* state list most adjacent to least adjacent - somewhat contiguous - OPTIMAL *)
+    state_list_type = (California, Nevada, Arizona, Montana, Idaho, Oregon, Utah, Wyoming, Colorado, NewMexico, Texas, Oklahoma, Nebraska, SouthDakota, Kansas, Missouri, Iowa, Washington, NorthDakota, Minnesota, Arkansas, Louisiana);
+
+    (* state list Northwest to Southeast contiguous - original*)
+(*    state_list_type = (Washington, Oregon, California, Arizona, Nevada, Idaho, Montana, Wyoming, Utah, Colorado, NewMexico, Texas, Oklahoma, Kansas, Nebraska, SouthDakota, NorthDakota, Minnesota, Iowa, Missouri, Arkansas, Louisiana);
+*)
+    (* state list Northwest to Southeast adjacent to at least two states *)
+(*    state_list_type = (Washington, Oregon, Idaho, Nevada, California, Arizona, Utah, Wyoming, Montana, Colorado, NewMexico, SouthDakota, Nebraska, NorthDakota, Kansas, Oklahoma, Texas, Minnesota, Iowa, Missouri, Arkansas, Louisiana);
+*)
+    (* state list most adjacent up front, then Northwest to Southeast contiguous *)
+(*    state_list_type = (Colorado, SouthDakota, Oklahoma, Utah, Wyoming, Idaho, Nebraska, Washington, Oregon, California, Arizona, Nevada, Montana, NewMexico, Texas, Kansas, NorthDakota, Minnesota, Iowa, Missouri, Arkansas, Louisiana);
+*)
+    (* state list most adjacent first, then adjacent to it and so forth *)
+(*    state_list_type = (Colorado, Wyoming, Utah, Nebraska, Oklahoma, NewMexico, Arizona, Kansas, SouthDakota, Montana, Idaho, Nevada, Iowa, Missouri, Texas, Arkansas, California, NorthDakota, Minnesota, Washington, Oregon, Louisiana);
+*)
+    (* state list least adjacent to most adjacent - somewhat contiguous *)
+(*    state_list_type = (Louisiana, Washington, NorthDakota, Minnesota, California, Oregon, Montana, Texas, Kansas, Iowa, Arkansas, Arizona, Nevada, NewMexico, Missouri, Idaho, Wyoming, Utah, Oklahoma, Nebraska, SouthDakota, Colorado);
+*)
+    (* state list Southeast to Northwest contiguous *)
+(*    state_list_type = (Louisiana, Arkansas, Missouri, Iowa, Minnesota, NorthDakota, SouthDakota, Nebraska, Kansas, Oklahoma, Texas, NewMexico, Colorado, Utah, Wyoming, Montana, Idaho, Nevada, Arizona, California, Oregon, Washington); 
+*)
+    (* state list all mixed up - not contiguous *)
+(*   state_list_type = (Washington, Arkansas, California, Iowa, Nevada, NorthDakota, Montana, Nebraska, Utah, Oklahoma, NewMexico, Texas, Colorado, Kansas, Wyoming, SouthDakota, Idaho, Minnesota, Arizona, Missouri, Oregon, Louisiana);
+*)
+
+    (* create type for each state's corresponding value *)
+    state_value_type = array[state_list_type] of integer;
+
+    (* create types for each state's set of adjacent states *)
+    adjacent_states_set_type = set of state_list_type;
+    adjacent_states_type = array[state_list_type] of adjacent_states_set_type;
+
+    (* create type to track available colors per state) *)
+    valid_state_colors_type = array [state_list_type] of color_set_type;
+
+    (* create type to store each state/color assignment *)
+    state_color_combo_type = packed array[state_list_type] of color_list_type;
+
+Var
+    (* list of states, and variables to control range of states *)
+    state_list: state_list_type;
+    beg_state: state_list_type;
+    end_state: state_list_type;
+
+    (* static values for states, color multipliers and adjacent states *)
+    state_value: state_value_type;
+    color_multiplier: color_multiplier_type;
+    adjacent_states: adjacent_states_type;
+
+    (* dynamic values for valid colors and assigned color for each state*)
+    valid_state_colors: valid_state_colors_type;
+    state_color_combo: state_color_combo_type;
+
+    (* values for optimal solution *)
+    best_state_color_combo: state_color_combo_type;
+    best_score: longint = 0;
+
+    (* counters to capture computations *)
+    total_combos_checked: longint = 0;
+    total_deadend: longint = 0;
+    total_abandoned: longint = 0;
+    valid_combo_count: longint = 0;
+
+Const (* use these to set values to configure the execution for each run *)
+    minmax_option: string = 'MIN'; (* sets whether to find min or max score *)
+    beg_state_const: state_list_type = California; (* sets start limit on how many states to include *)
+    end_state_const: state_list_type = Louisiana; (* sets end limit on how many states to include *)
+
+procedure convert_color_set_to_string(color_set: color_set_type; var color_str: string);
+
+    (* returns a string of all colors in a set of colors *)
+
+    var
+        color: color_list_type;
+        curr_color_str: string;
+
+    begin
+        color_str:=' ';
+        for color in color_set do begin
+            writestr(curr_color_str, color);
+            if (color_str <> ' ') then color_str:=color_str + ', ';
+            color_str:=color_str+curr_color_str;
+        end;
+    end;
+
+procedure display_all_valid_state_colors(valid_state_colors: valid_state_colors_type);
+
+    (* display all valid state colors for each state *)
+
+    var
+        state: state_list_type;
+        valid_state_color_list: string;
+
+    begin
+        for state in state_list_type do begin
+            convert_color_set_to_string(valid_state_colors[state], valid_state_color_list);
+            writeln(state,': ',valid_state_color_list);
+        end;
+        writeln;
+    end;
+
+procedure initialize_valid_state_colors(var valid_state_colors: valid_state_colors_type);
+
+    (* set the valid colors for each state to every color *)
+
+    var
+        colors: color_set_type;
+        state: state_list_type;
+
+    begin
+        colors:=[Red, Purple, Blue, Green];
+        for state in state_list_type do begin
+            valid_state_colors[state]:=colors;
+        end;
+
+        (* assign certain states limit colors due to limited initial adjancies based on objective*)
+        if minmax_option='MIN' then
+            begin
+(*                colors:=[Red, Purple, Blue];
+                valid_state_colors[Washington]:=colors;
+                valid_state_colors[Louisiana]:=colors;
+*)            end
+        else if minmax_option='MAX' then
+            begin
+                colors:=[Purple, Blue, Green];
+                valid_state_colors[Washington]:=colors;
+                valid_state_colors[Louisiana]:=colors;
+            end
+        else exit;
+        
+    end;
+
+procedure initialize_adjacent_states(var adjacent_states: adjacent_states_type);
+
+    (* define all the adjacent states for each state *)
+
+    begin
+        (* two adjacent states *)
+        adjacent_states[Washington]:=[Idaho, Oregon];
+        adjacent_states[Louisiana]:=[Arkansas, Texas];
+
+        (* three adjacent states *)
+        adjacent_states[California]:=[Arizona, Nevada, Oregon];
+        adjacent_states[NorthDakota]:=[Minnesota, Montana, SouthDakota];
+        adjacent_states[Minnesota]:=[Iowa, NorthDakota, SouthDakota];
+
+        (* four adjacent states *)
+        adjacent_states[Kansas]:=[Colorado, Missouri, Nebraska, Oklahoma];
+        adjacent_states[Montana]:=[Idaho, NorthDakota, SouthDakota, Wyoming];
+        adjacent_states[Oregon]:=[California, Idaho, Nevada, Washington];
+        adjacent_states[Texas]:=[Arkansas, Louisiana, NewMexico, Oklahoma];
+        adjacent_states[Iowa]:=[Minnesota, Missouri, Nebraska, SouthDakota];
+        adjacent_states[Arkansas]:=[Louisiana, Missouri, Oklahoma, Texas];
+
+        (* five adjacent states *)
+        adjacent_states[Arizona]:=[California, Colorado, Nevada, NewMexico, Utah];
+        adjacent_states[Nevada]:=[Arizona, California, Idaho, Oregon, Utah];
+        adjacent_states[NewMexico]:=[Arizona, Colorado, Oklahoma, Texas, Utah];
+        adjacent_states[Missouri]:=[Arkansas, Iowa, Kansas, Nebraska, Oklahoma];
+
+        (* six adjacent states *)
+        adjacent_states[Idaho]:=[Montana, Nevada, Oregon, Utah, Washington, Wyoming];
+        adjacent_states[Nebraska]:=[Colorado, Iowa, Kansas, Missouri, SouthDakota, Wyoming];
+        adjacent_states[Oklahoma]:=[Arkansas, Colorado, Kansas, Missouri, NewMexico, Texas];
+        adjacent_states[SouthDakota]:=[Iowa, Minnesota, Montana, Nebraska, NorthDakota, Wyoming];
+        adjacent_states[Utah]:=[Arizona, Colorado, Idaho, Nevada, NewMexico, Wyoming];
+        adjacent_states[Wyoming]:=[Colorado, Idaho, Montana, Nebraska, SouthDakota, Utah];
+
+        (* seven adjacent states *)
+        adjacent_states[Colorado]:=[Arizona, Kansas, Nebraska, NewMexico, Oklahoma, Utah, Wyoming];
+
+    end;
+
+procedure initialize_state_values(var state_value: state_value_type);
+
+    (* define the value for each state *)
+
+    begin
+        state_value[Arizona]:=113;
+        state_value[Arkansas]:=53;
+        state_value[California]:=163;
+        state_value[Colorado]:=104;
+        state_value[Idaho]:=83;
+        state_value[Iowa]:=56;
+        state_value[Kansas]:=82;
+        state_value[Louisiana]:=51;
+        state_value[Minnesota]:=86;
+        state_value[Missouri]:=69;
+        state_value[Montana]:=147;
+        state_value[Nebraska]:=77;
+        state_value[Nevada]:=110;
+        state_value[NewMexico]:=121;
+        state_value[NorthDakota]:=70;
+        state_value[Oklahoma]:=69;
+        state_value[Oregon]:=98;
+        state_value[SouthDakota]:=77;
+        state_value[Texas]:=268;
+        state_value[Utah]:=84;
+        state_value[Washington]:=71;
+        state_value[Wyoming]:=97;
+    end;
+
+procedure initialize_color_multipliers(var color_multiplier: color_multiplier_type);
+
+    (* define the multiplier for each color *)
+
+    begin
+        color_multiplier[Red]:=1;
+        color_multiplier[Purple]:=2;
+        color_multiplier[Blue]:=3;
+        color_multiplier[Green]:=4;
+    end;
+
+procedure initialize_state_color_combo(var state_color_combo: state_color_combo_type);
+
+
+    (* set initial color assigned to each state based on the objective *) 
+
+    var
+        state: state_list_type;
+
+    begin
+        for state in state_list_type do
+            begin
+                if minmax_option='MIN' then
+                    (* set the initial color assigned to each state to NoColor *)
+                    state_color_combo[state]:=Red
+                else if minmax_option='MAX' then
+                    (* set the initial color assigned to each state to Green *)
+                    state_color_combo[state]:=Green
+                else exit;
+            end;
+    end;
+    
+procedure initialize_best_score(var best_score: longint);
+
+    (* set best score based on the objective *) 
+
+    begin
+        if minmax_option='MIN' then
+            best_score:=10000000
+        else if minmax_option='MAX' then
+            best_score:=0
+        else exit;
+    end;
+
+procedure remove_color_from_adjacent_states(curr_state: state_list_type; curr_state_color: color_list_type; var valid_state_colors: valid_state_colors_type);
+
+    (* remove the color assigned to the current state from each adjacent state *)
+    (* converts the assigned color to a set, and then substracts that set from the set of valid colors for each adjacent state*)
+
+    var
+        curr_state_color_set: color_set_type;
+        state: state_list_type;
+
+    begin
+        curr_state_color_set:=[];
+        include(curr_state_color_set, curr_state_color);
+        for state in adjacent_states[curr_state] do begin
+            valid_state_colors[state]:=valid_state_colors[state]-curr_state_color_set;
+        end;
+        exclude(curr_state_color_set, curr_state_color);
+
+    end;
+    
+procedure calculate_state_combo_score(state_color_combo: state_color_combo_type; var score: longint);
+
+    (* cycles thru each state-color assignment to calculate the score for each and accumulates the total for all the states *)
+
+    var
+        state: state_list_type;
+
+    begin
+        score:=0;
+        for state in state_list_type do
+            begin
+                score:=score + (state_value[state] * color_multiplier[state_color_combo[state]]);
+                if state=end_state then exit;
+            end;
+    end;
+
+procedure display_state_color_combo(state_color_combo: state_color_combo_type);
+
+    (* displays the state-color assignments for each state *)
+
+    var
+        state_str: string;
+        value_str: string;
+        color_str: string;
+        state: state_list_type;
+        combo_str: ansistring;
+
+    begin
+        combo_str:='';
+        for state in state_list_type do
+            begin
+                writestr(state_str, state);
+                writestr(value_str, state_value[state]);
+                writestr(color_str, state_color_combo[state]);
+                combo_str:=combo_str+'State: '+ state_str + ', state_value: ' + value_str + ', color: ' + color_str + #10;
+                if state=end_state then
+                    begin
+                        writeln(combo_str);
+                        exit;
+                    end;
+            end;
+    end;
+    
+function is_better_score(curr_score: longint): boolean;
+
+    (* determines whether the current score is better than the best score so far *)
+
+    var
+        return_val: boolean = false;
+
+    begin
+        case (minmax_option) of
+            'MIN':
+                    if curr_score < best_score then return_val:=true;
+            'MAX' :
+                    if curr_score > best_score then return_val:=true; 
+        end; (* case minmax_option *)
+        
+        is_better_score:=return_val;
+    end;
+
+procedure assign_state_color(curr_state:state_list_type; state_color_combo: state_color_combo_type; valid_state_colors: valid_state_colors_type);
+
+    (* primary recursive procedure used to assign colors to each state, determine the score along the way, and find the optimal solution *)
+
+    var
+        next_state: state_list_type;
+        color: color_list_type;
+        curr_state_color: color_set_type;
+        curr_valid_state_colors: valid_state_colors_type;
+        curr_state_color_combo: state_color_combo_type;
+        score: longint;
+
+    begin
+        (* reset values for each recursive iteration *)
+        curr_state_color:=[];
+
+        (* keep track of the valid state colors and state color combo entering the procedure to reset them later *)
+        curr_valid_state_colors:=valid_state_colors;
+        curr_state_color_combo:=state_color_combo;
+
+        (* if the current state has no valid colors left to be assigned then exit *)
+        if popcnt(dword(valid_state_colors[curr_state]))=0 then 
+            begin
+                (* increment counters for calculating computations *)
+                total_combos_checked:=total_combos_checked+1;
+                total_deadend:=total_deadend+1;
+                exit;
+            end;
+
+        (* assign each valid color to the current state, calculate the score, and if this is the last state, keep the combo if the score is the best, else remove each assigned color from the set of valid colors and recursively add the next state *)
+        for color in valid_state_colors[curr_state] do 
+            begin
+
+                (* assign the current color to the current state *)
+                state_color_combo[curr_state]:=color;
+                (* calculate the score for the combo so far, even if it a color has not been assigned for every state yet *)
+                score:=0;
+                calculate_state_combo_score(state_color_combo, score);
+
+                (* if we are adding the last state, then record the combo if it has the best score and exit the recursion *)
+                if curr_state=end_state then 
+                    begin
+                        (* increment counters for calculating computations *)
+                        total_combos_checked:=total_combos_checked+1;
+                        valid_combo_count:=valid_combo_count+1;
+
+                        (* record the score and corresponding combo if it is the best so far *)
+                        if is_better_score(score) then
+                            begin
+                                best_score:=score;
+                                best_state_color_combo:= state_color_combo;
+                            end;
+
+                    end (* if curr_state=end_state *)
+
+                else
+                (* current state is not the last state, so if the current score is worse than the best score then abandon further color assignments, else remove each assigned color from the set of valid colors and recursively add the next state *)
+
+                    begin
+(*                        if not is_better_score(score) then
+*)                        (* if the score of the combo so far is worse than the best score so far, then no need to keep exploring that combo anymore, so just exit the recursion
+                        
+                           if you eliminate this step then you can see how many valid combos are possible to explore *)
+(*                            begin
+                                total_combos_checked:=total_combos_checked+1;
+                                total_abandoned:=total_abandoned+1;
+                            end
+                        else
+*)                        (* at this point, we know the current combo has a chance to be the best, so keep going with the procedure by removing the assigned color from adjacent states, and recursively exploring assigned all available colors to the next state *)
+    
+(*                            begin
+*)                                (* remove the assigned color from states adjacent to the current state *)
+                                remove_color_from_adjacent_states(curr_state, color, valid_state_colors);
+                
+                                (* set valid color for the current state to the assigned color. this step is completely unnecessary but makes the display easier to read when debugging *)
+                                include(curr_state_color, color);
+                                valid_state_colors[curr_state]:=curr_state_color;
+                                exclude(curr_state_color, color);
+    
+                                (* determine the next state to add to the combo *)
+                                next_state:=succ(curr_state);
+        
+                                (* assign available valid colors to the next state *)
+                                assign_state_color(next_state, state_color_combo, valid_state_colors);
+    
+(*                            end; *)(* if-then-else not is_better_score(score) *)
+
+                        (* reset the valid state colors and state color combo to the values when the procedure began for the next iteration of the for loop to use so the next loop starts with non-updated values from the previous loop *)
+                        valid_state_colors:=curr_valid_state_colors;
+                        state_color_combo:=curr_state_color_combo;
+
+                    end; (* if-then-else curr_state=end_state *)
+
+            end; (* for loop *)
+
+    end; (* procedure *)
+
+
+(* MAIN *)
+
+begin
+
+    (* initialize all static data structures *)
+    initialize_adjacent_states(adjacent_states);
+    initialize_state_values(state_value);
+    initialize_color_multipliers(color_multiplier);
+
+    (*  the loop below runs the algorithm incrementally for one state, then two, etc. which helps monitor whether it is progressing as expected. 
+        
+        ultimately we only care about the 22 state solution, but seeing how it increments can help debug *) 
+
+    (* uncomment the line below and enter a State to run the algorithm for fewer states *)
+    beg_state:=beg_state_const;
+    end_state:=end_state_const;
+
+    for end_state:=beg_state to high(state_list_type) do
+        begin
+            (* initialize all dynamic data structures *)
+            initialize_valid_state_colors(valid_state_colors);
+            initialize_state_color_combo(state_color_combo);
+        
+            (* initialize optimal solution *)
+            initialize_state_color_combo(best_state_color_combo);
+            initialize_best_score(best_score);
+
+            (* reset all counters *) 
+            total_combos_checked:=0;
+            total_deadend:=0;
+            total_abandoned:=0;
+            valid_combo_count:=0;
+
+            (* initiate recursive procedure call *)
+            assign_state_color(state_list, state_color_combo, valid_state_colors);
+
+            (* write results to display *)
+            writeln('End State: ', end_state);
+            writeln(minmax_option,' score: ', best_score);
+            writeln('Total combos checked: ', total_combos_checked);
+            writeln('Total deadends: ', total_deadend);
+            writeln('Total abandoned valid combos: ', total_abandoned);
+            writeln('Total complete valid combos: ', valid_combo_count);
+            writeln;
+            
+            (* uncomment the line below and enter a State to run the algorithm for fewer states *)
+             if end_state=end_state_const then break;  
+            
+        end; (* end For loop *)
+
+        (* display optimal solution *)
+        display_state_color_combo(best_state_color_combo);
+
+end.
