@@ -45,7 +45,7 @@ Add up all your state scores for your total number of points. Your goal is to ge
 
 I realized actually solving this puzzle to find the optimal score is equivalent to work I did in my 4th year of Systems Engineering in college. So I decided to write code to find the optimal solution for comparison against what my son (and his classmates came up with). I wrote it in Pascal simply because it was easier for me to recall than C++ or any other language I learned in college 20 years ago.
 
-It turns out my son found the optimal solution all on his own with the aid of a computer/algorithm! As did 3 other students. But none fully appreciated the complexity until I volunteered in class one day to show them how there were actually 4^22 ways to color the states and only 340,416 valid ways to color them, with just 2 optimal solutions!
+It turns out my son found the optimal solution all on his own without the aid of a computer/algorithm! As did 3 other students. But none fully appreciated the complexity until I volunteered in class one day to show them how there were actually 4^22 ways to color the states and only 340,416 valid ways to color them, with just 2 optimal solutions!
 
 Once I coded the optimal solution, I wanted to see if I could scale it to 50 states, but quickly ran into memory problems - with 4^50 possible combinations, the code would not run to completion. So I had to find a more clever way to solve the puzzle that would eliminate 'expensive' combinations quickly.
 
