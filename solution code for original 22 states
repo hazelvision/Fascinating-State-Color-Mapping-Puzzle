@@ -371,7 +371,7 @@ procedure assign_state_color(curr_state:state_list_type; state_color_combo: stat
 
                 (* assign the current color to the current state *)
                 state_color_combo[curr_state]:=color;
-                (* calculate the score for the combo so far, even if it a color has not been assigned for every state yet *)
+                (* calculate the score for the combo so far, even if a color has not been assigned for every state yet *)
                 score:=0;
                 calculate_state_combo_score(state_color_combo, score);
 
