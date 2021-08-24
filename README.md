@@ -1,5 +1,5 @@
 # State-Color-Mapping-Puzzle
-Solves a puzzle in which one of four colors is assigned to each of 22 contiguous US States to maximize the total score, where adjacent states cannot have the same color.
+Solves a puzzle in which one of four colors is assigned to each of 22 contiguous US States to maximize (or minimize) the total score, where adjacent states cannot have the same color.
 
 My son's 5th grade class was given this assignment to complete using only their brains, and I immediately recognized this problem was far more complex than the teacher understood. 
 
@@ -52,7 +52,7 @@ Once I coded the optimal solution, I wanted to see if I could scale it to 50 sta
 I've posted here the final code that solves the problem for 50 states, either for the min or max score, and in, I believe, the most efficient manner possible. 
 
 I tried writing code to free up memory for objects that were no longer needed, but it would not compile in the compiler I used.
-I also treid to write this using recursion (like you might for solving a maze), but couldn't figure out the logic.
+I also tried to write this using recursion (like you might for solving a maze), but couldn't figure out the logic.
 
 I am curious whether anyone has any other ideas on how this could be solved.
 
