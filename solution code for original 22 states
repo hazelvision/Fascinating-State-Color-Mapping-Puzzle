@@ -125,7 +125,7 @@ procedure initialize_valid_state_colors(var valid_state_colors: valid_state_colo
             valid_state_colors[state]:=colors;
         end;
 
-        (* assign certain states limit colors due to limited initial adjancies based on objective*)
+        (* assign certain states fewer colors due to limited initial adjancies based on objective*)
         if minmax_option='MIN' then
             begin
 (*                colors:=[Red, Purple, Blue];
